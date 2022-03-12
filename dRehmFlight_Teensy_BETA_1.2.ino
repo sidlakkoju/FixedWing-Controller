@@ -1,5 +1,5 @@
 //Arduino/Teensy Flight Controller - dRehmFlight
-//Author: Nicholas Rehm
+//Author: Siddharth Lakkoju and Nicholas Rehm
 //Project Start: 1/6/2020
 //Version: Beta 1.2
 
@@ -182,7 +182,7 @@ float maxRoll = 30.0;     //Max roll angle in degrees for angle mode (maximum 60
 float maxPitch = 30.0;    //Max pitch angle in degrees for angle mode (maximum 60 degrees), deg/sec for rate mode
 float maxYaw = 160.0;     //Max yaw rate in deg/sec
 
-float Kp_roll_angle = 0.2;    //Roll P-gain - angle mode 
+float Kp_roll_angle = 0.2;    //Roll P-gain - angle mode (Default: 0.2)
 float Ki_roll_angle = 0.3;    //Roll I-gain - angle mode
 float Kd_roll_angle = 0.05;   //Roll D-gain - angle mode (if using controlANGLE2(), set to 0.0)
 float B_loop_roll = 0.9;      //Roll damping term for controlANGLE2(), lower is more damping (must be between 0 to 1)
@@ -396,7 +396,7 @@ void loop() {
   loopBlink(); //indicate we are in main loop with short blink every 1.5 seconds
 
   //Print data at 100hz (uncomment one at a time for troubleshooting) - SELECT ONE:
-  printRadioData();     //radio pwm values (expected: 1000 to 2000)
+  //printRadioData();     //radio pwm values (expected: 1000 to 2000)
   //printDesiredState();  //prints desired vehicle state commanded in either degrees or deg/sec (expected: +/- maxAXIS for roll, pitch, yaw; 0 to 1 for throttle)
   //printGyroData();      //prints filtered gyro data direct from IMU (expected: ~ -250 to 250, 0 at rest)
   //printAccelData();     //prints filtered accelerometer data direct from IMU (expected: ~ -2 to 2; x,y 0 when level, z 1 when level)
@@ -404,7 +404,7 @@ void loop() {
   //printRollPitchYaw();  //prints roll, pitch, and yaw angles in degrees from Madgwick filter (expected: degrees, 0 when level)
   //printPIDoutput();     //prints computed stabilized PID variables from controller and desired setpoint (expected: ~ -1 to 1)
   //printMotorCommands(); //prints the values being written to the motors (expected: 120 to 250)
-  //printServoCommands(); //prints the values being written to the servos (expected: 0 to 180)
+  printServoCommands(); //prints the values being written to the servos (expected: 0 to 180)
   //printLoopRate();      //prints the time between loops in microseconds (expected: microseconds between loop iterations)
 
   //Get vehicle state
@@ -1049,21 +1049,42 @@ void controlMixer() {
    */
   //Quad mixing
   //m1 = front left, m2 = front right, m3 = back right, m4 = back left
+  /*
   m1_command_scaled = thro_des - pitch_PID + roll_PID + yaw_PID;
   m2_command_scaled = thro_des - pitch_PID - roll_PID - yaw_PID;
   m3_command_scaled = thro_des + pitch_PID - roll_PID + yaw_PID;
   m4_command_scaled = thro_des + pitch_PID + roll_PID - yaw_PID;
   m5_command_scaled = 0;
   m6_command_scaled = 0;
-
+  */
+  m1_command_scaled = 0;
+  m2_command_scaled = 0;
+  m3_command_scaled = 0;
+  m4_command_scaled = 0;
+  m5_command_scaled = 0;
+  m6_command_scaled = 0;
   //0.5 is centered servo, 0 is zero throttle if connecting to ESC for conventional PWM, 1 is max throttle
-  s1_command_scaled = 0;
-  s2_command_scaled = 0;
-  s3_command_scaled = 0;
-  s4_command_scaled = 0;
-  s5_command_scaled = 0;
-  s6_command_scaled = 0;
-  s7_command_scaled = 0;
+  s1_command_scaled = thro_des;
+  s2_command_scaled = thro_des;
+
+  if (channel_6_pwm < 1500) {
+    s3_command_scaled = 0.5 + roll_PID;
+    s4_command_scaled = 0;
+    s5_command_scaled = 0;
+    s6_command_scaled = 0;
+    s7_command_scaled = 0;
+
+  }
+
+  if (channel_6_pwm > 1500) {
+     s3_command_scaled = 0.5 + roll_passthru;
+    s4_command_scaled = 0;
+    s5_command_scaled = 0;
+    s6_command_scaled = 0;
+    s7_command_scaled = 0;
+  }
+  
+
 
   //Example use of the linear fader for float type variables. Linearly interpolate between minimum and maximum values for Kp_pitch_rate variable based on state of channel 6:
   /*
@@ -1318,8 +1339,8 @@ void throttleCut() {
     m6_command_PWM = 120;
     
     //uncomment if using servo PWM variables to control motor ESCs
-    //s1_command_PWM = 0;
-    //s2_command_PWM = 0;
+    s1_command_PWM = 0;
+    s2_command_PWM = 0;
     //s3_command_PWM = 0;
     //s4_command_PWM = 0;
     //s5_command_PWM = 0;
