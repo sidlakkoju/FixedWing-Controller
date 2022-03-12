@@ -211,9 +211,9 @@ float Kd_yaw = 0.00015;       //Yaw D-gain (be careful when increasing too high,
 //NOTE: Pin 13 is reserved for onboard LED, pins 18 and 19 are reserved for the MPU6050 IMU for default setup
 //Radio:
 //Note: If using SBUS, connect to pin 21 (RX5)
-const int ch3Pin = 15; //throttle
-const int ch1Pin = 16; //ail
-const int ch2Pin = 17; //ele
+const int ch1Pin = 15; //throttle
+const int ch2Pin = 16; //ail
+const int ch3Pin = 17; //ele
 const int ch4Pin = 20; //rudd
 const int ch5Pin = 21; //gear (throttle cut)
 const int ch6Pin = 22; //aux1 (free aux channel)
