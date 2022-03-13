@@ -178,8 +178,8 @@ float MagScaleZ = 1.0;
 
 //Controller parameters (take note of defaults before modifying!): 
 float i_limit = 25.0;     //Integrator saturation level, mostly for safety (default 25.0)
-float maxRoll = 30.0;     //Max roll angle in degrees for angle mode (maximum 60 degrees), deg/sec for rate mode 
-float maxPitch = 30.0;    //Max pitch angle in degrees for angle mode (maximum 60 degrees), deg/sec for rate mode
+float maxRoll = 40.0;     //Max roll angle in degrees for angle mode (maximum 60 degrees), deg/sec for rate mode 
+float maxPitch = 45.0;    //Max pitch angle in degrees for angle mode (maximum 60 degrees), deg/sec for rate mode
 float maxYaw = 160.0;     //Max yaw rate in deg/sec
 
 float Kp_roll_angle = 0.2;    //Roll P-gain - angle mode (Default: 0.2)
@@ -404,7 +404,7 @@ void loop() {
   //printRollPitchYaw();  //prints roll, pitch, and yaw angles in degrees from Madgwick filter (expected: degrees, 0 when level)
   //printPIDoutput();     //prints computed stabilized PID variables from controller and desired setpoint (expected: ~ -1 to 1)
   //printMotorCommands(); //prints the values being written to the motors (expected: 120 to 250)
-  printServoCommands(); //prints the values being written to the servos (expected: 0 to 180)
+  //printServoCommands(); //prints the values being written to the servos (expected: 0 to 180)
   //printLoopRate();      //prints the time between loops in microseconds (expected: microseconds between loop iterations)
 
   //Get vehicle state
@@ -1064,26 +1064,43 @@ void controlMixer() {
   m5_command_scaled = 0;
   m6_command_scaled = 0;
   //0.5 is centered servo, 0 is zero throttle if connecting to ESC for conventional PWM, 1 is max throttle
-  s1_command_scaled = thro_des;
-  s2_command_scaled = thro_des;
+  s1_command_scaled = thro_des; // right propeller
+  s2_command_scaled = thro_des; // left propeller
 
   if (channel_6_pwm < 1500) {
-    s3_command_scaled = 0.5 + roll_PID;
-    s4_command_scaled = 0;
-    s5_command_scaled = 0;
-    s6_command_scaled = 0;
-    s7_command_scaled = 0;
+    
+    Kp_roll_angle = 0.55;    //Roll P-gain - angle mode 
+    Ki_roll_angle = 0.3;    //Roll I-gain - angle mode
+    Kd_roll_angle = 0.1;   //Roll D-gain - angle mode (if using controlANGLE2(), has no effect. Use B_loop_roll)
+    
+    Kp_pitch_angle = 0.55;   //Pitch P-gain - angle mode
+    Ki_pitch_angle = 0.3;   //Pitch I-gain - angle mode
+    Kd_pitch_angle = 0.1;  //Pitch D-gain - angle mode (if using controlANGLE2(), has no effect. Use B_loop_pitch)
+  
+    Kp_yaw = 0.42;           //Yaw P-gain
+    Ki_yaw = 0.2;          //Yaw I-gain
+    Kd_yaw = 0.00011;       //Yaw D-gain (be careful when increasing too high, motors will begin to overheat!)
 
+
+    
+    s1_command_scaled = thro_des + yaw_PID; // right propeller
+    s2_command_scaled = thro_des - yaw_PID; // left propeller
+    s3_command_scaled = 0.5 + roll_PID; // ailerons
+    s4_command_scaled = 0.5 - pitch_PID; // elevator
+    s5_command_scaled = 0.5 - yaw_PID; // Rudder
   }
 
   if (channel_6_pwm > 1500) {
-     s3_command_scaled = 0.5 + roll_passthru;
-    s4_command_scaled = 0;
-    s5_command_scaled = 0;
-    s6_command_scaled = 0;
-    s7_command_scaled = 0;
+    s1_command_scaled = thro_des + 0.3*yaw_passthru; // right propeller
+    s2_command_scaled = thro_des - 0.3*yaw_passthru; // left propeller
+    s3_command_scaled = 0.5 + roll_passthru; // ailerons
+    s4_command_scaled = 0.5 - pitch_passthru; // elevator
+    s5_command_scaled = 0.5 - yaw_passthru; // Rudder
   }
-  
+
+  //Unused Servos
+  s6_command_scaled = 0;
+  s7_command_scaled = 0;
 
 
   //Example use of the linear fader for float type variables. Linearly interpolate between minimum and maximum values for Kp_pitch_rate variable based on state of channel 6:
